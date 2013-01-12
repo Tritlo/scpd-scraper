@@ -1,9 +1,3 @@
-Digital Systems II->ee108b
-The Entrepreneurial Engineer->ee203
-Advanced Analog Integrated Circuit Design->ee214b
-Introduction to Digital Communication->ee279
-Power Electronics->ee292J
-Digital MOS Integrated Circuits->ee313
 Nanophotonics->ee336
 Digital Communication->ee379
 Colloquium on Computer Systems->ee380
@@ -38,3 +32,9 @@ Database Systems Principles->cs245
 Mining Massive Data Sets->cs246
 Introduction to Cryptography->cs255
 Human-Computer Interaction Seminar->cs547
+Digital Systems II->ee108b
+Advanced Analog Integrated Circuit Design->ee214b
+The Entrepreneurial Engineer->ee203
+Introduction to Digital Communication->ee279
+Power Electronics->ee292J
+Digital MOS Integrated Circuits->ee313
