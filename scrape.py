@@ -198,7 +198,7 @@ def begin_scraper():
 	assert br.viewing_html()
 	br.select_form(name="login")
 	br["username"] = "rhintz42" #Put your username here
-	br["password"] = "$difh$sfu" #getpass()
+	br["password"] = getpass()
 
 	# Open the course page for the title you're looking for 
 	response = br.submit()
