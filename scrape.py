@@ -34,8 +34,8 @@ called watched.
 
 num_vids_already_downloaded = 0
 first_class = ""
-current_folder = "/home/roberth/scpd-scraper"
-courses_to_download_local_txt = "test_courses_to_download.txt"
+current_folder = "/home/roberth/cs/scpd-scraper"
+courses_to_download_local_txt = "courses_to_download.txt"
 
 def _file_exists(file):
 	return os.path.isfile(file)
