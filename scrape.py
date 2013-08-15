@@ -15,7 +15,7 @@ videos.
 This script is modified from the one by Ben Newhouse (https://github.com/newhouseb).
 
 Unfortunately, there are lots of dependencies to get it up and running
-1. Handbrake CLI, for converting to mp4: http://handbrake.fr/downloads2.php
+1. FFmpeg for downloading and converting
 2. BeautifulSoup for parsing: http://www.crummy.com/software/BeautifulSoup/
 3. Mechanize for emulating a browser, http://wwwsearch.sourceforge.net/mechanize/
 
@@ -34,7 +34,8 @@ called watched.
 
 num_vids_already_downloaded = 0
 first_class = ""
-current_folder = "/home/roberth/cs/scpd-scraper"
+ffmpegFlags = "-strict -2"
+current_folder = os.getcwd()
 courses_to_download_local_txt = "courses_to_download.txt"
 
 def _file_exists(file):
@@ -70,19 +71,12 @@ def _append_line_to_file(file, line):
 	f.close()
 
 
-
-def convertToMp4(wmv, mp4):
-	print "Converting ", mp4
-	os.system('/usr/bin/HandBrakeCLI -i %s -o %s' % (wmv, mp4))
-	os.system('rm -f %s' % wmv)
-
 def download(work):
 	# work[0] is url, work[1] is wmv, work[2] is mp4
-	class_name = re.search('(.*)_', work[2])
+	class_name = re.search('(.*)_', work[1])
 	folder_name = "%s/%s" % (current_folder, class_name.group(1))
 	
-	path_to_vid_mp4 = "%s/%s" % (folder_name, work[2])
-	path_to_vid_wmv = "%s/%s" % (folder_name, work[1])
+	path_to_vid_mp4 = "%s/%s" % (folder_name, work[1])
 	
 	if not os.path.exists(folder_name):
 		os.makedirs(folder_name)
@@ -100,24 +94,21 @@ def download(work):
 	global num_vids_already_downloaded
 	a = num_vids_already_downloaded
 	
-	if work[2] in downloaded_videos_list or\
-	   work[1] in downloaded_videos_list:
+	if work[1] in downloaded_videos_list:
 		num_vids_already_downloaded = a + 1
-		print "Already downloaded", work[2]
+		print "Already downloaded", work[1]
 		return
-	elif os.path.exists("%s/%s" %(folder_name, work[2])) or\
-	     os.path.exists("%s/%s/%s" %(folder_name, "watched", work[2])) or\
-	     os.path.exists("%s/%s" %(folder_name, work[1])) or\
+	elif os.path.exists("%s/%s" %(folder_name, work[1])) or\
 	     os.path.exists("%s/%s/%s" %(folder_name, "watched", work[1])):
 		num_vids_already_downloaded = a + 1
-		_append_line_to_file(downloaded_videos_path, work[2])
-		print "Already downloaded", work[2]
+		_append_line_to_file(downloaded_videos_path, work[1])
+		print "Already downloaded", work[1]
 		return
 	#Comment out this line and uncomment out the other copy of this line
 	#_append_line_to_file(downloaded_videos_path, work[2])
 	
-	print "Starting", path_to_vid_wmv
-	
+	print "Starting", path_to_vid_mp4
+
 	#This is where the video gets put into the "Videos already Downloading" file
 	###Should make this into some sort of method because it's a common operation###
 	current_files_downloading_path = "%s/%s" %(current_folder, "current_files_downloading.txt")
@@ -125,12 +116,11 @@ def download(work):
 		f = open(current_files_downloading_path, 'w')
 		f.close()
 	
-	_append_line_to_file(current_files_downloading_path, path_to_vid_wmv)
+	_append_line_to_file(current_files_downloading_path, path_to_vid_mp4)
 
 
-	os.system("mimms -c %s %s" % (work[0], path_to_vid_wmv))
-	convertToMp4(path_to_vid_wmv, path_to_vid_mp4)
-	_append_line_to_file(downloaded_videos_path, work[2])
+	os.system("ffmpeg -i %s %s %s" % (work[0], ffmpegFlags, path_to_vid_mp4))
+	_append_line_to_file(downloaded_videos_path, work[1])
 	
 	###Need to make a "Remove line from file" function that removes a line from a file###
 	#if not _file_exists(current_files_downloading_path):
@@ -143,7 +133,7 @@ def download(work):
 	new_current_files_downloading_list = []
 	current_files_downloading_list = _file_to_list(current_files_downloading_path, no_new_line=True)
 	for current_file in current_files_downloading_list:
-		if current_file != path_to_vid_wmv:
+		if current_file != path_to_vid_mp4:
 			new_current_files_downloading_list.append("%s%s" %(current_file,'\n'))
 	
 	f = open(current_files_downloading_path, 'w')
@@ -151,7 +141,7 @@ def download(work):
 	f.close()
 	
 	
-	print "Finished", path_to_vid_wmv
+	print "Finished", path_to_vid_mp4
 
 
 def begin_scraper():
@@ -197,7 +187,7 @@ def begin_scraper():
 	br.open("https://myvideosu.stanford.edu/oce/currentquarter.aspx")
 	assert br.viewing_html()
 	br.select_form(name="login")
-	br["username"] = "rhintz42" #Put your username here
+	br["username"] = raw_input("Username: ") #Put your username here
 	br["password"] = getpass()
 
 	# Open the course page for the title you're looking for 
@@ -224,16 +214,18 @@ def begin_scraper():
 		response = br.open(link)
 		soup = BeautifulSoup(response.read())
 		video = soup.find('object', id='WMPlayer')['data']
-		video = re.sub("http","mms",video)		
+		video = re.sub("http","mmsh",video)		
 		video = video.replace(' ', '%20') # remove spaces, they break urls
-		output_name = re.search(r"[a-z]+[0-9]+[a-z]?/[0-9]+",video).group(0).replace("/","_") #+ ".wmv"
-		output_wmv = output_name + ".wmv"
+		#output_name = re.search(r"[a-z]+[0-9]+[a-z]?/[0-9]+",video).group(0).replace("/","_") #+ ".wmv"
+		output_name = re.search(r"[a-z]+[0-9]+[a-z]?/[0-9]+",video).group(0).replace("/","_") + ".mp4"
+		#output_wmv = output_name + ".wmv"
 		link_file.write(video + '\n')
 		#import pdb
 		#pdb.set_trace()
 		print video
-		output_mp4 = output_name + ".mp4"
-		videos.append((video, output_wmv, output_mp4))
+		#output_mp4 = output_name + ".mp4"
+		#videos.append((video, output_wmv, output_mp4))
+		videos.append((video, output_name))
 	
 	
 	link_file.close()
@@ -242,7 +234,7 @@ def begin_scraper():
 	#This needs to be fixed to handle classes that have no videos
 	class_name = ''
 	if len(videos) > 0:
-		class_name = re.search('(.*)_', videos[0][2])
+		class_name = re.search('(.*)_', videos[0][1])
 	else:
 		return
 	
